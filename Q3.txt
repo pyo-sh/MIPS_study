@@ -1,0 +1,39 @@
+#include <stdio.h>
+typedef struct HeapTag {
+	int data[1000];
+	int point;
+	int length;
+} Heap;
+// i = 1 부터 값을 넣는다..
+void main() {
+	Heap h1;
+	h1.point = 1;
+	h1.length = 1000;
+	while (h1.point != h1.length) {
+		scanf_s("%d", &h1.data[h1.point]);
+
+		int x = h1.point;
+		int temp;
+		while ((x != 1) && (h1.data[x] > h1.data[x/2]) ) {
+			temp = h1.data[x];
+			h1.data[x] = h1.data[x / 2];
+			h1.data[x / 2] = temp;
+			x /= 2;
+		}
+
+		printf("\n");
+		temp = 2;
+		for (int i = 1; i <= h1.point; i++) {
+			if ((i) % temp == 0) {
+				printf("\n");
+				temp *= 2;
+			}
+			printf("%d  ", h1.data[i]);
+		}
+
+		printf("\n");
+		printf("\n");
+
+		h1.point++;
+	}
+}
