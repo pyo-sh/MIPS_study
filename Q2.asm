@@ -1,7 +1,7 @@
 .data
 	newLine:		.asciiz	"\n"
 	Space:		.asciiz	"\t"
-	message:		.asciiz	"Inverse matrix doesn't exit."
+	message:		.asciiz	"Inverse matrix doesn't exist."
 	Array:		.word	1, 0, 5
 			.word	1, 1, 0
 			.word	3, 2, 6
