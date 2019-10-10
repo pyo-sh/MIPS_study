@@ -5,13 +5,13 @@
 	newLine:	.asciiz	"\n"
 	newTap:	.asciiz	"\t"
 	Heap:	.space	40
-   .eqv	DATA_SIZE	.word	40
+   .eqv	DATA_SIZE	40
 
 .text
 	main:
-		# t8 = point = i (Now Array cursor) / t9 = Array Size
+		# s0 = point = i (Now Array cursor) / s1 = Array Size
 		li	$s0,	0
-		li	$s1,	40
+		li	$s1,	DATA_SIZE
 		
 		# Loop until Array becomes FullArray
 		# s0 = 4i = 0 ; 4i < s1 (DATA_SIZE) ; 4i += 4
@@ -38,15 +38,14 @@
 			
 			# SortLoop
 			# for (int i = right; i > 0; i--)
-			# t0 = i = right = s0
+			# s3 = i = right = s0
 			
-			# t2 -> s5
-			add	$s3,	$zero,	$s0
+			move	$s3,	$s0
 			SortLoop:
 				# i = 0 / jump
-				beq	$s3,	$zero,	SortLoopout
+				beq	$s3,	0,	SortLoopout
 			
-				# heap[0] = s4 , heap[t0] = s5   / swap heap[0], heap[i]
+				# heap[0] = s4 , heap[s3] = s5   / swap heap[0], heap[i]
 				lw	$s4,	Heap($zero)
 				lw	$s5,	Heap($s3)
 				sw	$s4,	Heap($s3)
@@ -55,12 +54,13 @@
 				# Make Heap to minimum heap
 				# a1 = left cursor of the heap = 0
 				li	$a1,	0
-				# a2 = right cursor of the heap = t0 - 4
+				# a2 = right cursor of the heap = s3 - 4
 				addi	$s3,	$s3,	-4
-				add	$a2,	$zero,	$s3
+				move	$a2,	$s3
+				
 				jal	heapsort
 				
-				j	SortLoop
+			j	SortLoop
 				
 			SortLoopout:
 			
@@ -94,37 +94,46 @@
 # ---------------------------------------------------------------------------------
 
 	# function that Makes Heap to minimum heap
-	heapsort:	# t0 = a1 = left / t1 = a2 - 4 = right - 4
+	# 부모, 자식처리를 1, 2, 3, 4로 처리하는게 좋으니까 배열 참조할때만 -4를 함
+	heapsort:
+		# t0 = a1 = left + 4 / t1 = a2 + 4 = right + 4
 	
 		# heaploop
 		# for (int x = right / 2; x > 0; x--)
-		add	$t0,	$a1,	$zero
-		addi	$t1,	$a2,	-4
-		# t3 = x = (right - 4) / 2 [parent of right]
+		addi	$t0,	$a1,	4
+		addi	$t1,	$a2,	4
+		
+		# t3 = x = ( (right + 4) / 8 ) * 4 [parent of right]
 		li	$t9,	8
 		div	$t1,	$t9
 		mflo	$t3
 		mulu	$t3,	$t3,	4
-		# t2 = t3 = parent of right
-		add	$t2,	$zero,	$t3
+		
+		# t2 = t3 + 4 = parent of right + 4   /  because parent <= (right / 2)
+		addi	$t2,	$t3,	4
+		
 		heaploop:
-			# t3 = x = (right-4)/2   /   x > 0
-			# t3 < 0
-			slt	$t9,	$t3,	$t0
-			beq	$t9,	1,	heaploopout
+			# x = t3 = ( (right + 4)/8 ) * 4   /   x > 0 / x > left
+			#  x > 0(left) / a1 < t3
+			slt	$t9,	$a1,	$t3
+			# true(1) = execute, false = jump
+			beq	$t9,	0,	heaploopout
 			
 			# heapify
-			# for (int parent = x; parent <= (right / 2); parent *= child)
+			# for (int parent = x; parent <= (right / 2); parent = child)
 			# t4 = parent = x(t3)
-			add	$t4,	$t3,	$zero
+			move	$t4,	$t3
 			heapify:
-				# t4  <=  $2  / parent <= (right / 2)
-				beq	$t4,	$t2,	heapifyout
+				#  parent <= (right / 2)   / t4  <  t2 ((right / 2) + 4)
+				slt	$t9,	$t4,	$t2
+				# true(1) = execute, false(0) = jump
+				beq	$t9,	0,	heapifyout
 				
-				# t5 = child1 = parent * 2; = t4 * 2
-				# t6 = child2 = parent * 2 + 1 = t4 * 2 + 1 =t5 + 1
-				mulu	$t5,	$t4,	2
-				addi	$t6,	$t5,	4
+				# t5 = child1 = parent * 2; = t4 * 2		- 4
+				# t6 = child2 = parent * 2 + 4 = t4 * 2 + 4 =t5 + 4	- 4
+				# 인덱스를 계산하는 거니까 참조할 땐 -4를 해야하므로 -4씩
+				mulu	$t6,	$t4,	2
+				addi	$t5,	$t6,	-4
 				
 				# if (child < right && a[child] > a[child + 1])
 				# child 1 < right   / t5 < a2	t9 = true or false
@@ -136,28 +145,39 @@
 					lw	$t7,	Heap($t5)
 					lw	$t8,	Heap($t6)
 					slt	$t9,	$t8,	$t7
-					# true(1) = execute still, false(0) = jum
+					
+					# true(1) = execute still, false(0) = jump
 					beq	$t9,	0,	setchildout
+					
 						# true (1) = ++ child = ++ (t5, t7)
-						add	$t5,	$zero,	$t6
-						add	$t7,	$zero,	$t8	
+						move	$t5,	$t6
+						move	$t7,	$t8
+						
 				setchildout:
+				
 				# t4 = parent, t5 = child, t7 = heap[child], t8 = heap[parent] 
+				# 인덱스니까 -4
+				addi	$t4,	$t4,	-4
 				lw	$t8,	Heap($t4)
+				lw	$t7,	Heap($t5)
+				
 				# if (a[parent] > a[child])
-				# a[child] < a[parent]   / t7 < t8
-				slt	$t9,	$t7,	$t8
+				# a[parent] < a[child]   / t8 < t7
+				slt	$t9,	$t8,	$t7
 				# true(1) = execute, false(0) = jump (no execute)
-				beq	$t9,	0,	swapout
+				beq	$t9,	1,	swapout
 					# swap a[parent] and a[child]
 					# parent = a[child]
 					sw	$t7,	Heap($t4)
 					# child = a[parent]
 					sw	$t8,	Heap($t5)
 				swapout:
-				
+				# 인덱스니까 +4
+				addi	$t5,	$t5,	4
 				# parent = child / t4 = t5
-				add	$t4,	$zero,	$t5
+				move	$t4,	$t5
+				
+				j	heapify
 				
 			heapifyout:
 			
@@ -168,6 +188,8 @@
 		heaploopout:
 		
 	jr	$ra
+	
+# ---------------------------------------------------------------------------------
 	
 	# function that Prints sorted Array
 	printArray:
@@ -195,4 +217,3 @@
 		printLoopout:
 		
 	jr	$ra
-		
