@@ -46,8 +46,7 @@ bool checksort(int a[], int left, int right) {
 	return true;
 }
 
-// i = 1 부터 값을 넣는다..
-void main3() {
+void main() {
 	Heap h1;
 	h1.point = 1;
 	h1.length = 1000;
@@ -75,7 +74,6 @@ void main3() {
 			}*/
 		}
 
-		// print
 		printf("\n");
 		for (int i = 1; i <= h1.point; i++) {
 			printf("%d  ", h1.data[i]);
