@@ -46,8 +46,8 @@ bool checksort(int a[], int left, int right) {
 	return true;
 }
 
-// i = 1 ë¶€í„° ê°’ì„ ë„£ëŠ”ë‹¤..
-void main() {
+// i = 1 ºÎÅÍ °ªÀ» ³Ö´Â´Ù..
+void main3() {
 	Heap h1;
 	h1.point = 1;
 	h1.length = 1000;
